@@ -1,0 +1,214 @@
+<!--
+    這個程式能進行簡單的Minecraft Crash-Report分析
+    Copyright (C) 2014 曙(ifTNT)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.   
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+	<title>Crash Detector js</title>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<meta name="generator" content="Geany 1.23.1" />
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<style>
+		#title_bg {
+			background-color: rgb(40%,40%,40%);
+			color: rgb(90%,90%,90%);
+			border-radius: 10px;
+			padding: 10px 0 10px 0;
+			margin: 5px 0 15px 0;
+			text-align: center;
+			font-size: 15px;
+		}
+		#Github {
+			position: absolute;
+			top: 45px;
+			right: 20px;
+			background-color: rgb(60%,60%,60%);
+			padding: 3px 5px 3px 5px;
+			border-radius: 5px;
+		}
+		#Github:hover {
+			cursor: pointer;
+			color: rgb(60%,60%,60%);
+			background-color: rgb(90%,90%,90%);
+		}
+		#result {
+			position: absolute;
+			margin-top: 20px;
+			height: 300px;
+			width: 30%;
+			border: solid 5px rgb(60%,60%,60%);
+			border-radius: 10px;
+		}
+		a {
+			text-decoration: none;
+			color: #1A9BEA;
+		}
+		a:hover {
+			text-decoration: underline;
+			color: #0B6094;
+		}
+		#report {
+			position: absolute;
+			top: 470px;
+			width: 30%;
+			border: solid 2px #000;
+			border-radius: 5px;
+			text-align: center;
+			font-size: 25px;
+			padding: 5px 0 5px 0;
+			background-color: rgb(50%,50%,50%);
+			color: #FFF;
+		}
+		#report:hover {
+			cursor: pointer;
+			background-color: rgb(80%,80%,80%);
+			color: rgb(50%,50%,50%);
+		}
+	</style>
+</head>
+
+<body>
+	<div id="title_bg">
+		<span style="font-weight:bold;font-size:40px;color:#FFF;word-spacing:5px;">Crash Detector js</span> ── 快速分析你的Minecraft Crash-Report
+		<div style="position:absolute;top:20px;right:20px;">License:GPLv3&nbsp;&nbsp;&nbsp;Author:ifTNT</div>
+		<div id="Github" onClick="window.open('https://github.com/ifTNT/Crash_Detector_js');">Github</div>
+	</div>
+	<span style="font-size:18px;">選一個紀錄檔:&nbsp;</span><input id="crash-report-input" type="file" style="border:dashed 2px rgb(60%,60%,60%);padding:5px 5px 5px 5px;border-radius:10px;letter-spacing:2px;"/>
+	<br>
+	<div id="result">
+		<div style="position:absolute;left:50%;margin-top:-15px;margin-left:-60px;background-color:#FFF;font-size:25px;padding:0 5px 0 5px;letter-spacing:5px;color:rgb(40%,40%,40%);">診斷結果</div>
+		<div id="result-result" style="padding:20px 5px 0 5px;font-size:18px;line-height:25px;"></div>
+	</div>
+	<!--<div id="report">回報未收錄的崩潰訊息/誤判</div>-->
+</body>
+
+<script>
+	var problem=undefined;
+	(function(){ //init
+		$('#crash-report-input').change(function(){readTextFile($(this).get(0).files[0],AnalyzeReport);});
+		$.get("http://ifTNT.github.io/Crash_Detector_js/Crash_Detector_js.json",function(result){
+				problem=result;
+			},"json")
+			.fail(function(){
+				problem=
+					[
+						{
+							Regex: /Bad Video Card Drivers/,
+							Message: function(){return "顯示卡可能不支援Minecraft或是顯示卡驅動程式太舊<br>Google這些關鍵字可能會有幫助: <span style='color:#800080;'>顯示卡 驅動程式 更新</span>";}
+						},
+						{
+							Regex: /org\.lwjgl\.LWJGLException: Pixel format not accelerated/,
+							Message: function(){return "顯示卡可能不支援Minecraft或是顯示卡驅動程式太舊<br>Google這些關鍵字可能會有幫助: <span style='color:#800080;'>顯示卡 驅動程式 更新</span>";}
+						},
+						{
+							Regex: /Fatal FML error/,
+							Message: function(){return "你可能在使用1.5.2版的Forge<br><a href='http://bit.ly/1lyBCjh'>這篇文章</a>可能有幫助";}
+						},
+						{
+							Regex: /There was a fatal error starting up minecraft and FML/,
+							Message: function(){return "你可能在使用1.5.2版的Forge<br><a href='http://bit.ly/1lyBCjh'>這篇文章</a>可能有幫助";}
+						},
+						{
+							Regex: /requires mods/,
+							Message: function(text){
+								var mods=text.match(/requires mods\s*\w+/g);
+								for(var i in mods){
+									mods[i]=mods[i].replace(/requires mods\s*/,'')
+								}
+								return "需要模組:&nbsp;<span style='color:#A52A2A;'>"+mods.join("</span> <span style='color:#000;'>,</span> <span style='color:#A52A2A;'>")+"</span>";
+							}
+						},
+						{
+							Regex: /java\.lang\.ClassNotFoundException:/,
+							Message: function(){return "可能安裝方式錯誤或缺少檔案";}
+						},
+						{
+							Regex: /java\.lang\.NoSuchClassMethod:/,
+							Message: function(){return "可能沒有安裝指定模組或指定模組版本太舊";}
+						},
+						{
+							Regex: /java\.lang\.AbstractMethodError/,
+							Message: function(){return "Forge版本太舊，請更換新版";}
+						},
+						{
+							Regex: /Minecraft Forge was too old/,
+							Message: function(){return "Forge版本太舊，請更換新版";}
+						},
+						{
+							Regex: /java\.lang\.IllegelArgumentException/,
+							Message: function(){return "方塊\物品ID衝突";}
+						},
+						{
+							Regex: /java\.lang\.Null Pointer Explasion/,
+							Message: function(){return "安裝方式錯誤";}
+						},
+						{
+							Regex: /java\.lang\.OutOfMemoryError/,
+							Message: function(){return "你電腦的記憶體不足或分配的記憶體不夠";}
+						},
+						{
+							Regex: /java\.lang\.IndexOutOfBoundsException/,
+							Message: function(){return "方塊\物品ID設定錯誤(數字太高)";}
+						},
+						{
+							Regex: /java\.lang\.ArrayIndexOutOfBoundsException:/,
+							Message: function(){return "方塊\物品ID設定錯誤(數字太高)";}
+						},
+						{
+							Regex: /java\.lang\.NoClassDefFoundError: IllegalName:/,
+							Message: function(){return "核心模組不相容，你可能用Modloader去跑Forge的模組";}
+						},
+						{
+							Regex: /duplicate file name:/,
+							Message: function(){return "模組檔案重複";}
+						},
+						{
+							Regex: /java\.lang\.IndexOutOfBoundsException: Index: 0, Size: 0/,
+							Message: function(){return "推測為Optifine與其他模組的不相容(例如1.7.2的IC2)";}
+						},
+						{
+							Regex: /A fatal error has been detected by the Java Runtime Environment:/,
+							Message: function(){return "這是Core dump，基本上應該不常出現，如果頻繁地出現你可以嘗試:<ul><li>刪除.minecraft(建議先備份)</li><li>更新Java到最新的版本</li></ul>如果以上的方法都幫不了你，我也不知道<br>如果你有解決的好方法，請告訴開發者<br><span style='color:red;'>請不要上傳此崩潰紀錄</span>"}
+						}
+					];
+			});
+	})();
+	function AnalyzeReport(Text){ //分析Report
+		//[Regex,Message]
+		var OneProblem=undefined;
+		for(i=0;OneProblem=problem[i];i++){
+			console.log(OneProblem.Regex+"="+OneProblem.Regex.test(Text));
+			if(OneProblem.Regex.test(Text)){
+				$('#result-result').html(OneProblem.Message(Text));
+				return;
+			}
+		}
+		$('#result-result').html("<span style='color:red;'>未收錄的崩潰訊息<!--,請使用下面的按鈕回報--></span><br>");
+	}
+	function readTextFile(file,callback){  //讀檔案(非同步)
+		var reader = new FileReader();
+		reader.onload = (function(env){
+				callback(env.target.result);
+			});
+		reader.readAsText(file);
+	}
+</script>
+
+</html>
