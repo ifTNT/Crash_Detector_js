@@ -1,4 +1,4 @@
-[
+var problem=[
 	{
 		Regex: /Bad Video Card Drivers/,
 		Message: function(){return "顯示卡可能不支援Minecraft或是顯示卡驅動程式太舊<br>Google這些關鍵字可能會有幫助: <span style='color:#800080;'>顯示卡 驅動程式 更新</span>";}
@@ -77,4 +77,4 @@
 		Regex: /A fatal error has been detected by the Java Runtime Environment:/,
 		Message: function(){return "這是Core dump，基本上應該不常出現，如果頻繁地出現你可以嘗試:<ul><li>刪除.minecraft(建議先備份)</li><li>更新Java到最新的版本</li></ul>如果以上的方法都幫不了你，我也不知道<br>如果你有解決的好方法，請告訴開發者<br><span style='color:red;'>請不要上傳此崩潰紀錄</span>"}
 	}
-]
+];
